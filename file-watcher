@@ -1,0 +1,36 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"time"
+)
+
+func watchFile(filename string, checkInterval time.Duration) {
+	lastModified := time.Now()
+
+	for {
+		file, err := os.Stat(filename)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if file.ModTime().After(lastModified) {
+			fmt.Println("File was modified at", file.ModTime())
+			lastModified = file.ModTime()
+		}
+
+		time.Sleep(checkInterval)
+	}
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Please provide the filename as an argument.")
+		return
+	}
+
+	filename := os.Args[1]
+	watchFile(filename, 5*time.Second)
+}

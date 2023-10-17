@@ -1,0 +1,29 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+func renameFiles(dir, prefix string) {
+	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			newName := prefix + info.Name()
+			newPath := filepath.Join(dir, newName)
+			os.Rename(path, newPath)
+		}
+		return nil
+	})
+}
+
+func main() {
+	dir := "./files"
+	prefix := "new_"
+	renameFiles(dir, prefix)
+	fmt.Println("Renaming completed.")
+}

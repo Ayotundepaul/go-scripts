@@ -1,0 +1,49 @@
+// (Note: This requires the github.com/etcd-io/etcd/client/v3 package)
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	clientv3 "github.com/etcd-io/etcd/client/v3"
+)
+
+func acquireLock(cli *clientv3.Client, lockName string) clientv3.LeaseID {
+	lease, err := cli.Grant(context.TODO(), 10)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = cli.Put(context.TODO(), lockName, "", clientv3.WithLease(lease.ID))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return lease.ID
+}
+
+func releaseLock(cli *clientv3.Client, lockName string, leaseID clientv3.LeaseID) {
+	cli.Revoke(context.TODO(), leaseID)
+}
+
+func main() {
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{"localhost:2379"},
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cli.Close()
+
+	lockName := "my-lock"
+	leaseID := acquireLock(cli, lockName)
+	fmt.Println("Acquired lock")
+
+	time.Sleep(5 * time.Second)
+
+	releaseLock(cli, lockName, leaseID)
+	fmt.Println("Released lock")
+}

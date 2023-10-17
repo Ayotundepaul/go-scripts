@@ -1,0 +1,43 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
+
+type Item struct {
+	ID    string `json:"id"`
+	Value string `json:"value"`
+}
+
+var data = map[string]Item{}
+
+func createItem(w http.ResponseWriter, r *http.Request) {
+	var item Item
+	err := json.NewDecoder(r.Body).Decode(&item)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	data[item.ID] = item
+	w.WriteHeader(http.StatusCreated)
+}
+
+func getItem(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if item, ok := data[id]; ok {
+		json.NewEncoder(w).Encode(item)
+	} else {
+		http.Error(w, "Item not found", http.StatusNotFound)
+	}
+}
+
+func main() {
+	http.HandleFunc("/create", createItem)
+	http.HandleFunc("/get", getItem)
+
+	fmt.Println("Server started on :8082")
+	http.ListenAndServe(":8082", nil)
+}

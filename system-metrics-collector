@@ -1,0 +1,15 @@
+package main
+
+import (
+	"fmt"
+	"runtime"
+)
+
+func main() {
+	fmt.Printf("CPU cores: %d\n", runtime.NumCPU())
+	fmt.Printf("Go Routines: %d\n", runtime.NumGoroutine())
+
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+	fmt.Printf("Memory used: %v bytes\n", mem.TotalAlloc)
+}

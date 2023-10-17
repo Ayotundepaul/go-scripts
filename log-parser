@@ -1,0 +1,35 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+)
+
+func main() {
+	file, err := os.Open("logs.txt")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	counter := map[string]int{}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "ERROR") {
+			counter["ERROR"]++
+		} else if strings.Contains(line, "WARN") {
+			counter["WARN"]++
+		} else {
+			counter["INFO"]++
+		}
+	}
+
+	fmt.Println("Log Statistics:")
+	for key, value := range counter {
+		fmt.Printf("%s: %d\n", key, value)
+	}
+}

@@ -1,0 +1,45 @@
+package main
+
+import (
+	"net/http"
+	"sync"
+	"time"
+)
+
+var rateLimit = 5
+var windowSize = 10 * time.Second
+var visits = make(map[string]time.Time)
+var mu sync.Mutex
+
+func rateLimiterMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		now := time.Now()
+		for ip, t := range visits {
+			if now.Sub(t) >= windowSize {
+				delete(visits, ip)
+			}
+		}
+
+		if len(visits) >= rateLimit {
+			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+			return
+		}
+
+		ip := r.RemoteAddr
+		visits[ip] = now
+		next.ServeHTTP(w, r)
+	})
+}
+
+func main() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello, world!"))
+	})
+
+	limitedMux := rateLimiterMiddleware(mux)
+	http.ListenAndServe(":8083", limitedMux)
+}
